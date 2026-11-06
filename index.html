@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Bureau — suite bureautique</title>
+<meta name="theme-color" content="#1d2129">
+<meta name="description" content="Traitement de texte, tableur et présentations dans une seule application.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Carlito:ital,wght@0,400;0,700;1,400;1,700&family=Roboto:ital,wght@0,400;0,700;1,400&family=Open+Sans:ital,wght@0,400;0,700;1,400&family=Lato:ital,wght@0,400;0,700;1,400&family=Montserrat:ital,wght@0,400;0,700;1,400&family=Poppins:ital,wght@0,400;0,700;1,400&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
@@ -688,6 +690,24 @@ function colorBtn(icon,title,initial,onPick,opts={}){
   return b;
 }
 
+/* ----- Application installable (version web) ----- */
+const isWebApp=/github\.io$/.test(location.hostname)||location.hostname==='localhost';
+let installEvt=null;
+function setupPWA(){
+  if(!isWebApp) return;
+  document.head.append(el('link',{rel:'manifest',href:'manifest.webmanifest'}),el('link',{rel:'apple-touch-icon',href:'icons/apple-touch-icon.png'}),el('link',{rel:'icon',type:'image/png',href:'icons/icon-192.png'}));
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+  window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); installEvt=e; $$('.install-btn').forEach(b=>b.hidden=false); });
+  window.addEventListener('appinstalled',()=>{ installEvt=null; $$('.install-btn').forEach(b=>b.hidden=true); toast('Bureau est installé sur ton appareil'); });
+  if('launchQueue' in window) window.launchQueue.setConsumer(async p=>{ for(const h of p.files||[]){ try{ importFile(await h.getFile()); }catch{} } });
+}
+function installBtn(){
+  const b=el('button',{class:'btn install-btn',type:'button',html:ic('download')+'<span>Installer</span>',title:'Installer Bureau comme une application'});
+  b.addEventListener('click',async()=>{ if(!installEvt){ installHelp(); return; } installEvt.prompt(); const r=await installEvt.userChoice.catch(()=>null); if(r?.outcome==='accepted'){ installEvt=null; b.hidden=true; } });
+  return b;
+}
+function installHelp(){ modal({title:'Installer Bureau',body:el('div',{},el('p',{},'Dans Google Chrome (ordinateur) : clique sur l’icône d’installation à droite de la barre d’adresse, ou menu ⋮ → « Caster, enregistrer et partager » → « Installer la page en tant qu’appli ».'),el('p',{},'Sur Android (Chrome) : menu ⋮ → « Ajouter à l’écran d’accueil » → « Installer ».'),el('p',{},'Sur iPhone (Safari) : bouton Partager → « Sur l’écran d’accueil ».')),actions:[{label:'OK',primary:true}]}); }
+
 function applyTheme(t){ document.documentElement.dataset.theme=t; try{ localStorage.setItem('bureau.theme',t); }catch{} $$('.theme-btn').forEach(b=>{ b.innerHTML=ic(t==='dark'?'sun':'moon'); b.title=t==='dark'?'Mode clair':'Mode sombre'; }); }
 function themeBtn(){ const b=el('button',{class:'theme-btn',type:'button'}); b.addEventListener('click',()=>applyTheme(document.documentElement.dataset.theme==='dark'?'light':'dark')); b.innerHTML=ic(document.documentElement.dataset.theme==='dark'?'sun':'moon'); b.title=document.documentElement.dataset.theme==='dark'?'Mode clair':'Mode sombre'; return b; }
 const inClaude=()=>!!window.claude?.use;
@@ -820,7 +840,7 @@ let homeSearch=null, homeFiles=[];
 function buildHome(){
   const h=$('#home'); h.innerHTML='';
   homeSearch=el('input',{placeholder:'Rechercher dans mes fichiers',oninput:()=>renderList()});
-  const top=el('header',{class:'h-top'},el('div',{class:'brand',html:LOGO+'<span>Bureau</span>'}),el('div',{class:'h-search',html:ic('search')},homeSearch),themeBtn(),el('button',{class:'btn primary',onclick:()=>openDialog(),html:ic('upload')+'<span>Ouvrir un fichier</span>'}));
+  const top=el('header',{class:'h-top'},el('div',{class:'brand',html:LOGO+'<span>Bureau</span>'}),el('div',{class:'h-search',html:ic('search')},homeSearch),isWebApp&&!matchMedia('(display-mode: standalone)').matches?installBtn():null,themeBtn(),el('button',{class:'btn primary',onclick:()=>openDialog(),html:ic('upload')+'<span>Ouvrir un fichier</span>'}));
   const tiles=el('div',{class:'tiles'});
   for(const t of TILES){ const b=el('button',{class:'tile',type:'button',style:`--c:var(--${t.kind})`,onclick:()=>newFile(t.kind,t.tpl)}); b.innerHTML=t.pv+`<div class="tl">${kindBadge(t.kind,20)}<span>${esc(t.label)}<small>${esc(t.sub)}</small></span></div>`; tiles.append(b); }
   const create=el('section',{class:'h-create'},el('div',{class:'h-inner'},el('h2',{},'Créer'),tiles));
@@ -2790,7 +2810,7 @@ const TEMPLATES={
    DÉMARRAGE
    ===================================================================== */
 try{ const t=localStorage.getItem('bureau.theme'); if(t) document.documentElement.dataset.theme=t; }catch{}
-buildHome(); initShell(); renderHome(); initCaps();
+setupPWA(); buildHome(); initShell(); renderHome(); initCaps();
 </script>
 </body>
 </html>

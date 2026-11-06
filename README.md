@@ -12,3 +12,7 @@ Traitement de texte, tableur et présentations sur une seule page, sans installa
 - **Ouvrir** : .docx, .xlsx, .xls, .csv, .pptx, .pdf (lecture + conversion en document)
 
 Les fichiers sont enregistrés automatiquement dans le navigateur (localStorage).
+
+## Installer comme une application
+
+Ouvre https://ozne26.github.io/bureau/ dans Google Chrome puis clique sur **Installer** (en haut de la page) ou sur l'icône d'installation dans la barre d'adresse. Bureau s'ouvre alors dans sa propre fenêtre, fonctionne hors connexion et peut ouvrir directement les fichiers .docx, .xlsx, .pptx, .csv et .pdf.
